@@ -121,7 +121,6 @@ def main():
             facenet.load_model(modeldir)
             print('\nFinish Loading feature extraction model---')
 
-
             tornado.options.parse_command_line()
             http_server = HTTPServer(Application(sess,[pnet, rnet, onet]), xheaders=True)
             http_server.listen(options.port)

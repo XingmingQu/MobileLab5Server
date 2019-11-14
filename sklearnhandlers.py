@@ -20,22 +20,14 @@ import base64
 import os
 from PIL import Image
 import cv2
+
 # Take in base64 string and return cv image
-
-
-
-
 def stringToRGB(base64_string):
     img = base64.b64decode(str(base64_string)); 
     npimg = np.fromstring(img, dtype=np.uint8); 
     source = cv2.imdecode(npimg, 1)
     source = cv2.resize(source,(300,400))
-    #     # Filename 
-    # filename = 'savedImage.jpg'
-      
-    # # Using cv2.imwrite() method 
-    # # Saving the image 
-    # cv2.imwrite(filename, source) 
+
     return source
 
 
@@ -73,12 +65,20 @@ class UploadLabeledDatapointHandler(BaseHandler):
 
         print('\n\n\n\n',face.shape)
 
-        # # save image 
-        # directory = self.image_dataset_dir + '/'+label
-        # if not os.path.exists(directory):
-        #     os.makedirs(directory)
+        # save image 
+        directory = self.image_dataset_dir + '/'+label+'/'
+        if not os.path.exists(directory):
+            os.makedirs(directory)
 
-        # img_number=len(os.listdir(directory))
+        img_number=len(os.listdir(directory))
+            # Filename 
+        filename = directory+label+'_'+str(img_number+1)+'.png'
+          
+        # Using cv2.imwrite() method 
+        # Saving the image 
+        cv2.imwrite(filename, image) 
+
+
 
 class RequestNewDatasetId(BaseHandler):
     def get(self):
