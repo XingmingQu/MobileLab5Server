@@ -1,0 +1,15 @@
+./mtcnnFacesData/ouzhen/ouzhen_1.png 76 94 239 290
+./mtcnnFacesData/Remus/Remus_1.png 91 87 267 300
+./mtcnnFacesData/qxm/qxm_3.png 86 101 224 266
+./mtcnnFacesData/qxm/qxm_2.png 86 101 224 266
+./mtcnnFacesData/qxm/qxm_6.png 59 96 244 333
+./mtcnnFacesData/qxm/qxm_1.png 86 101 224 266
+./mtcnnFacesData/qxm/qxm_5.png 73 112 250 340
+./mtcnnFacesData/qxm/qxm_4.png 86 101 224 266
+./mtcnnFacesData/sujin/sujin_1.png 84 154 250 357
+./mtcnnFacesData/Yuqing/Yuqing_1.png 59 116 233 322
+./mtcnnFacesData/zq/zq_1.png 33 99 249 358
+./mtcnnFacesData/Siddhika/Siddhika_1.png 94 61 234 227
+./mtcnnFacesData/Siddhika/Siddhika_2.png 67 65 218 246
+./mtcnnFacesData/Eric/Eric_1.png 88 129 234 303
+./mtcnnFacesData/Eric/Eric_2.png 91 151 216 294

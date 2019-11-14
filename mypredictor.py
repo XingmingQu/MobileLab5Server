@@ -149,7 +149,7 @@ def main():
 
 	                    best_class_probabilities = predictions[np.arange(len(best_class_indices)), best_class_indices]
 	                    print (best_class_probabilities)
-	                    if best_class_probabilities[0] > 0.3 and right < best_class_probabilities[0]:
+	                    if best_class_probabilities[0] > 0.5 and right < best_class_probabilities[0]:
 
 		                    pre=float(best_class_probabilities[i])*100
 		                    pre= round(pre,2)

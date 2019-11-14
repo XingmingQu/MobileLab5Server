@@ -170,9 +170,13 @@ class BaseHandler(tornado.web.RequestHandler):
         bounding_boxes, _ = align.detect_face.detect_face(img, minsize, self.MTCNNs[0], self.MTCNNs[1], self.MTCNNs[2], threshold, factor)
         nrof_faces = bounding_boxes.shape[0]
 
-        if nrof_faces != 1:
-            print('multiple faces detected...please show one face at a time')
-            return img
+        if nrof_faces > 1:
+            # print('multiple faces detected...please show one face at a time')
+            return 0     
+
+        if nrof_faces < 1:
+            # print('multiple faces detected...please show one face at a time')
+            return -1
         else:
             for face_position in bounding_boxes:
                 face_position=face_position.astype(int)

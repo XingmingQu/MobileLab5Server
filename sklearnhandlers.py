@@ -189,6 +189,12 @@ class PredictOneFromDatasetId(BaseHandler):
         sess  = data['dsid']
 
         face = self.faceEmbedding(image)
+        if face == -1:
+            self.write_json({"prediction":str("No face detected...please show one face at a time")})
+            return
+        if face == 0:
+            self.write_json({"prediction":str("multiple faces detected...please show one face at a time")})
+            return
 
         print('\n\n\n',face.shape)
         if self.clf == []:
@@ -201,7 +207,17 @@ class PredictOneFromDatasetId(BaseHandler):
         best_class_indices = np.argmax(predictions, axis=1)
         best_class_probabilities = predictions[np.arange(len(best_class_indices)), best_class_indices]
         
-        if best_class_probabilities[0] > 0.3:
+        sig_test = list(predictions[0])
+        del sig_test[best_class_indices[0]]
+
+        arrstd = np.std(sig_test)
+        arrmean = np.mean(sig_test)
+        right = arrmean+3.5*arrstd
+        print(sig_test)
+        print(arrmean,arrstd,right,best_class_probabilities[0])
+
+
+        if best_class_probabilities[0] > 0.375 and best_class_probabilities[0]> right:
             pre=float(best_class_probabilities[0])*100
             pre= round(pre,2)
             pre=str(pre)+'%'

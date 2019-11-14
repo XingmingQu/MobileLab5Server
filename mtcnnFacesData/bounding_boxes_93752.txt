@@ -1,9 +1,0 @@
-./mtcnnFacesData/Aaron_Guiel/Aaron_Guiel_0001.png 52 49 183 214
-./mtcnnFacesData/qxm/qxm_4.png 86 101 224 266
-./mtcnnFacesData/qxm/qxm_2.png 86 101 224 266
-./mtcnnFacesData/qxm/qxm_3.png 86 101 224 266
-./mtcnnFacesData/qxm/qxm_5.png 73 112 250 340
-./mtcnnFacesData/qxm/qxm_6.png 59 96 244 333
-./mtcnnFacesData/qxm/qxm_1.png 86 101 224 266
-./mtcnnFacesData/Aaron_Eckhart/Aaron_Eckhart_0001.png 62 50 185 199
-./mtcnnFacesData/Aaron_Patterson/Aaron_Patterson_0001.png 64 56 185 197
