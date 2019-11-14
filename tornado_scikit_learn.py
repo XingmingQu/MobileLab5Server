@@ -44,7 +44,7 @@ from sklearn.svm import SVC
 
 #--------------Argument------------------------------------------------
 modeldir='/Users/xqu/datasets/pretrain/20180402-114759.pb'
-classifier_filename_exp='/Users/xqu/datasets/mymodels/lfw_classifier.pkl'
+classifier_filename_exp='./model/mySVMmodel.pkl'
 FaceImW=160
 FaceImH=160
 WindowWidth=600
@@ -63,7 +63,7 @@ define("port", default=8000, help="run on the given port", type=int)
 # Utility to be used when creating the Tornado server
 # Contains the handlers and the database connection
 class Application(tornado.web.Application):
-    def __init__(self,tfSession,MTCNNs):
+    def __init__(self,tfSession,MTCNNs,classifier_filename_exp):
         '''Store necessary handlers,
            connect to database
         '''
@@ -79,7 +79,7 @@ class Application(tornado.web.Application):
         self.handlers_string = str(handlers)
 
         try:
-            self.client  = MongoClient(serverSelectionTimeoutMS=50) # local host, default port
+            self.client  = MongoClient(serverSelectionTimeoutMS=999999) # local host, default port
             print(self.client.server_info()) # force pymongo to look for possible running servers, error if none running
             # if we get here, at least one instance of pymongo is running
             self.db = self.client.sklearndatabase # database with labeledinstances, models
@@ -97,6 +97,8 @@ class Application(tornado.web.Application):
         self.embedding_model_path = modeldir
         self.tfSession = tfSession
         self.MTCNNs = MTCNNs
+        self.classifier_filename_exp=classifier_filename_exp
+        self.class_names=[]
 
         settings = {'debug':True}
         tornado.web.Application.__init__(self, handlers, **settings)
@@ -122,7 +124,7 @@ def main():
             print('\nFinish Loading feature extraction model---')
 
             tornado.options.parse_command_line()
-            http_server = HTTPServer(Application(sess,[pnet, rnet, onet]), xheaders=True)
+            http_server = HTTPServer(Application(sess,[pnet, rnet, onet],classifier_filename_exp), xheaders=True)
             http_server.listen(options.port)
             IOLoop.instance().start()
 

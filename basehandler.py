@@ -76,6 +76,12 @@ class BaseHandler(tornado.web.RequestHandler):
         return self.application.clf
 
     @property
+    def class_names(self):
+        '''Instance getter for current classifier
+        '''
+        return self.application.class_names
+
+    @property
     def image_dataset_dir(self):
         '''Instance getter for current classifier
         '''
@@ -97,11 +103,21 @@ class BaseHandler(tornado.web.RequestHandler):
     def MTCNNs(self):
         '''Instance getter for current classifier
         '''
-        return self.application.MTCNNs        
+        return self.application.MTCNNs      
+
+    @property
+    def classifier_filename_exp(self):
+        '''Instance getter for current classifier
+        '''
+        return self.application.classifier_filename_exp  
 
     @clf.setter
     def clf(self, value):
         self.application.clf = value
+
+    @class_names.setter
+    def class_names(self, value):
+        self.application.class_names = value
 
     def get_int_arg(self, value, default=[], strip=True):
         '''Convenience method for grabbing integer arguments
