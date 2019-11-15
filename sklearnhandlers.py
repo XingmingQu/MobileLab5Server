@@ -20,7 +20,11 @@ import base64
 import os
 from PIL import Image
 import cv2
-
+import tornado.web
+from tornado.ioloop import IOLoop
+from tornado import gen 
+import time
+from tornado.httpclient import AsyncHTTPClient
 # Take in base64 string and return cv image
 def stringToRGB(base64_string):
     img = base64.b64decode(str(base64_string)); 
@@ -56,19 +60,33 @@ class UploadLabeledDatapointHandler(BaseHandler):
         dbid = self.db.labeledinstances.insert(
             {"feature":vals,"label":label,"dsid":sess}
             );
-        self.write_json({"id":str(dbid),
-            "feature":vals,
-            "label":label})
+
 
 
         face = self.faceEmbedding(image)
-
+        if type(face) == int:
+            if face == -1:
+                self.write_json({"id":str(dbid),
+                "feature":vals,
+                "label":label,
+                "status":"No face detected...please show one face at a time"})
+                return
+            if face == 0:
+                self.write_json({"id":str(dbid),
+                "feature":vals,
+                "label":label,
+                "status":"multiple faces detected...please show one face at a time"})
+                return
         print('\n\n\n\n',face.shape)
 
         # save image 
         directory = self.image_dataset_dir + '/'+label+'/'
         if not os.path.exists(directory):
             os.makedirs(directory)
+
+        rmDS = 'rm '+directory+'.DS_Store'
+        if '.DS_Store' in os.listdir(directory):
+            flag=sp.call(rmDS,shell=True)
 
         img_number=len(os.listdir(directory))
             # Filename 
@@ -78,6 +96,13 @@ class UploadLabeledDatapointHandler(BaseHandler):
         # Saving the image 
         cv2.imwrite(filename, image) 
 
+        if '.DS_Store' in os.listdir(directory):
+            flag=sp.call(rmDS,shell=True)
+
+        self.write_json({"id":str(dbid),
+            "feature":vals,
+            "label":label,
+            "status":"Success!"})
 
 
 class RequestNewDatasetId(BaseHandler):
@@ -92,6 +117,7 @@ class RequestNewDatasetId(BaseHandler):
         self.write_json({"dsid":newSessionId})
 
 class UpdateModelForDatasetId(BaseHandler):
+    @gen.coroutine
     def get(self):
         '''Train a new model (or update) for given dataset ID
         '''
@@ -189,12 +215,13 @@ class PredictOneFromDatasetId(BaseHandler):
         sess  = data['dsid']
 
         face = self.faceEmbedding(image)
-        if face == -1:
-            self.write_json({"prediction":str("No face detected...please show one face at a time")})
-            return
-        if face == 0:
-            self.write_json({"prediction":str("multiple faces detected...please show one face at a time")})
-            return
+        if type(face) == int:
+            if face == -1:
+                self.write_json({"prediction":str("No face detected...please show one face at a time")})
+                return
+            if face == 0:
+                self.write_json({"prediction":str("multiple faces detected...please show one face at a time")})
+                return
 
         print('\n\n\n',face.shape)
         if self.clf == []:
