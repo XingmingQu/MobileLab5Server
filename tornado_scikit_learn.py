@@ -45,6 +45,7 @@ from sklearn.svm import SVC
 #--------------Argument------------------------------------------------
 modeldir='/Users/xqu/datasets/pretrain/20180402-114759.pb'
 classifier_filename_exp='./model/mySVMmodel.pkl'
+RF_path = './model/RFmodel.pkl'
 FaceImW=160
 FaceImH=160
 WindowWidth=600
@@ -63,7 +64,7 @@ define("port", default=8000, help="run on the given port", type=int)
 # Utility to be used when creating the Tornado server
 # Contains the handlers and the database connection
 class Application(tornado.web.Application):
-    def __init__(self,tfSession,MTCNNs,classifier_filename_exp):
+    def __init__(self,tfSession,MTCNNs,classifier_filename_exp,RF_path):
         '''Store necessary handlers,
            connect to database
         '''
@@ -89,7 +90,7 @@ class Application(tornado.web.Application):
             print('Are you running a valid local-hosted instance of mongodb?')
             #raise inst
         
-        self.clf = [] # the classifier model (in-class assignment, you might need to change this line!)
+        self.clf = {} # the classifier model (in-class assignment, you might need to change this line!)
         # but depending on your implementation, you may not need to change it  ¯\_(ツ)_/¯
 
         self.image_dataset_dir = image_dataset_dir
@@ -99,6 +100,8 @@ class Application(tornado.web.Application):
         self.MTCNNs = MTCNNs
         self.classifier_filename_exp=classifier_filename_exp
         self.class_names=[]
+        self.RF_path=RF_path
+        self.RF_est_number=50
 
         settings = {'debug':True}
         tornado.web.Application.__init__(self, handlers, **settings)
@@ -124,7 +127,7 @@ def main():
             print('\nFinish Loading feature extraction model---')
 
             tornado.options.parse_command_line()
-            http_server = HTTPServer(Application(sess,[pnet, rnet, onet],classifier_filename_exp), xheaders=True)
+            http_server = HTTPServer(Application(sess,[pnet, rnet, onet],classifier_filename_exp,RF_path), xheaders=True)
             http_server.listen(options.port)
             IOLoop.instance().start()
 

@@ -56,12 +56,10 @@ class UploadLabeledDatapointHandler(BaseHandler):
         # fvals = [float(val) for val in vals]
         label = data['label']
         sess  = data['dsid']
-
+        self.RF_est_number = int(data['Parameter'])
         dbid = self.db.labeledinstances.insert(
             {"feature":vals,"label":label,"dsid":sess}
             );
-
-
 
         face = self.faceEmbedding(image)
         if type(face) == int:
@@ -139,6 +137,7 @@ class UpdateModelForDatasetId(BaseHandler):
         data_folder = './mtcnnFacesData'
         face_net_model = '/Users/xqu/datasets/pretrain/20180402-114759.pb'
         output_model = './model/mySVMmodel.pkl'
+        RF_model = './model/RFmodel.pkl'
         batch_size = 10
         augment_times = 20
 
@@ -151,6 +150,7 @@ class UpdateModelForDatasetId(BaseHandler):
         """
 
         print("Now croping face from image........\n\n")
+        print('self.RF_est_number', self.RF_est_number)
         flag=sp.call(face_detection_corp_face,shell=True)
         if flag!=0:
             raise Exception('Please check python src/align/align_dataset_mtcnn.py  cmd ')
@@ -162,7 +162,10 @@ class UpdateModelForDatasetId(BaseHandler):
         {} \
         {} \
         --batch_size {} \
-        --augment_times {}""".format(data_folder,face_net_model,output_model,batch_size,augment_times)
+        --augment_times {} \
+        --RandomForestPath {} \
+        --n_estimators {}
+        """.format(data_folder,face_net_model,output_model,batch_size,augment_times,RF_model,self.RF_est_number)
 
         print("Now runing myclassifer........")
         flag=sp.call(cmd,shell=True)
@@ -171,11 +174,13 @@ class UpdateModelForDatasetId(BaseHandler):
         else:
             print('\nFinished')
 
+        with open(RF_model, 'rb') as infile:
+            (RFmodel, class_names) = pickle.load(infile)
+            self.clf['RF'] = RFmodel
+
         with open(output_model, 'rb') as infile:
             (model, class_names) = pickle.load(infile)
-
-
-            self.clf = model
+            self.clf['SVM'] = model
             self.class_names = class_names
             bytes = pickle.dumps(self.clf)
             self.db.models.update({"dsid":dsid},
@@ -217,39 +222,68 @@ class PredictOneFromDatasetId(BaseHandler):
         face = self.faceEmbedding(image)
         if type(face) == int:
             if face == -1:
-                self.write_json({"prediction":str("No face detected...please show one face at a time")})
+                self.write_json({"prediction":str("No face detected...please show one face at a time"),
+                                "RFprediction":str("No face detected...please show one face at a time")
+                                    })
                 return
             if face == 0:
-                self.write_json({"prediction":str("multiple faces detected...please show one face at a time")})
+                self.write_json({"prediction":str("multiple faces detected...please show one face at a time"),
+                        "RFprediction":str("multiple faces detected...please show one face at a time")})
                 return
 
         print('\n\n\n',face.shape)
-        if self.clf == []:
+        if self.clf == {}:
             with open(self.classifier_filename_exp, 'rb') as infile:
                 (model, class_names) = pickle.load(infile)
-                self.clf = model
+                self.clf["SVM"] = model
                 self.class_names = class_names
 
-        predictions = self.clf.predict_proba(face)
+            with open(self.RF_path, 'rb') as infile:
+                (RFmodel, class_names) = pickle.load(infile)
+                self.clf["RF"] = RFmodel
+
+
+        def get_prediction(clf_name):
+            predictions = self.clf[clf_name].predict_proba(face)
+            best_class_indices = np.argmax(predictions, axis=1)
+            best_class_probabilities = predictions[np.arange(len(best_class_indices)), best_class_indices]
+            
+            sig_test = list(predictions[0])
+            del sig_test[best_class_indices[0]]
+
+            arrstd = np.std(sig_test)
+            arrmean = np.mean(sig_test)
+            right = arrmean+3.5*arrstd
+            print(sig_test)
+            print(arrmean,arrstd,right,best_class_probabilities[0])
+
+            if best_class_probabilities[0] > 0.375 and best_class_probabilities[0]> right:
+                pre=float(best_class_probabilities[0])*100
+                pre= round(pre,2)
+                pre=str(pre)+'%'
+                a=self.class_names[best_class_indices[0]].split(' ')
+                result=a[0]
+                predict_result = str(result+' '+pre)
+                # self.write_json({"prediction":str(result+' '+pre)})
+            else:
+                predict_result = str("UNKNOWN")
+                # self.write_json({"prediction":str("UNKNOWN")})
+            return predict_result
+
+        svm_re =get_prediction("SVM")
+
+        predictions = self.clf["RF"].predict_proba(face)
         best_class_indices = np.argmax(predictions, axis=1)
         best_class_probabilities = predictions[np.arange(len(best_class_indices)), best_class_indices]
         
-        sig_test = list(predictions[0])
-        del sig_test[best_class_indices[0]]
-
-        arrstd = np.std(sig_test)
-        arrmean = np.mean(sig_test)
-        right = arrmean+3.5*arrstd
-        print(sig_test)
-        print(arrmean,arrstd,right,best_class_probabilities[0])
+        a=self.class_names[best_class_indices[0]].split(' ')
+        result=a[0]
+        RFpredict_result = str(result)
 
 
-        if best_class_probabilities[0] > 0.375 and best_class_probabilities[0]> right:
-            pre=float(best_class_probabilities[0])*100
-            pre= round(pre,2)
-            pre=str(pre)+'%'
-            a=self.class_names[best_class_indices[0]].split(' ')
-            result=a[0]
-            self.write_json({"prediction":str(result+' '+pre)})
-        else:
-            self.write_json({"prediction":str("UNKNOWN")})
+        rf_re =get_prediction("RF")
+
+        self.write_json({"prediction":svm_re,
+                        "RFprediction":RFpredict_result,
+                        "RF_est_number":str(self.RF_est_number)
+                        })

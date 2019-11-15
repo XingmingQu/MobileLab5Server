@@ -36,7 +36,7 @@ import math
 import pickle
 from sklearn.svm import SVC
 import random
-
+from sklearn.ensemble import RandomForestClassifier
 
 
 def main(args):
@@ -116,6 +116,8 @@ def main(args):
             # print(augment_label,len(augment_label))
 
             classifier_filename_exp = os.path.expanduser(args.classifier_filename)
+            randomF_filename_exp = os.path.expanduser(args.RandomForestPath)
+            N = args.n_estimators
 
             if (args.mode=='TRAIN'):
                 # Train classifier
@@ -130,7 +132,21 @@ def main(args):
                 with open(classifier_filename_exp, 'wb') as outfile:
                     pickle.dump((model, class_names), outfile)
                 print('\nSaved classifier model to file "%s"\n' % classifier_filename_exp)
-                
+
+                #-------------------------------------------------------------------
+                print('\nTraining Random forest classifier......')
+                model = RandomForestClassifier(n_estimators=N)
+                model.fit(augment_emb_array, augment_label)
+            
+                # Create a list of class names
+                class_names = [ cls.name.replace('_', ' ') for cls in dataset]
+
+                # Saving classifier model
+                with open(randomF_filename_exp, 'wb') as outfile:
+                    pickle.dump((model, class_names), outfile)
+                print('\nSaved classifier model to file "%s"\n' % randomF_filename_exp)
+
+
             elif (args.mode=='CLASSIFY'):
                 # Classify images
                 print('\nTesting classifier')
@@ -177,6 +193,15 @@ def parse_arguments(argv):
         help='Random seed.', default=666)
     parser.add_argument('--augment_times', type=int,
         help='Image augmentation times', default=6)
+
+
+    parser.add_argument('--RandomForestPath', 
+        help='Classifier model file name as a pickle (.pkl) file. ' + 
+        'For training this is the output and for classification this is an input.')
+    parser.add_argument('--n_estimators', type=int,
+        help='3-layer_mlp', default=100)
+
+
     parser.add_argument('--min_nrof_images_per_class', type=int,
         help='Only include classes with at least this number of images in the dataset', default=20)
     parser.add_argument('--nrof_train_images_per_class', type=int,

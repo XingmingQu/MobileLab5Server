@@ -111,6 +111,22 @@ class BaseHandler(tornado.web.RequestHandler):
         '''
         return self.application.classifier_filename_exp  
 
+    @property
+    def RF_path(self):
+        '''Instance getter for current classifier
+        '''
+        return self.application.RF_path  
+
+    @property
+    def RF_est_number(self):
+        '''Instance getter for current classifier
+        '''
+        return self.application.RF_est_number  
+
+    @RF_est_number.setter
+    def RF_est_number(self, value):
+        self.application.RF_est_number = value
+            
     @clf.setter
     def clf(self, value):
         self.application.clf = value
