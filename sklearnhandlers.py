@@ -20,11 +20,9 @@ import base64
 import os
 from PIL import Image
 import cv2
-import tornado.web
-from tornado.ioloop import IOLoop
-from tornado import gen 
-import time
-from tornado.httpclient import AsyncHTTPClient
+
+from tornado import gen
+
 # Take in base64 string and return cv image
 def stringToRGB(base64_string):
     img = base64.b64decode(str(base64_string)); 
@@ -34,6 +32,34 @@ def stringToRGB(base64_string):
 
     return source
 
+def get_prediction(clf,class_names,face):
+    predictions = clf.predict_proba(face)
+    best_class_indices = np.argmax(predictions, axis=1)
+    best_class_probabilities = predictions[np.arange(len(best_class_indices)), best_class_indices]
+    
+    sig_test = list(predictions[0])
+    del sig_test[best_class_indices[0]]
+
+    arrstd = np.std(sig_test)
+    arrmean = np.mean(sig_test)
+    right = arrmean+3.5*arrstd
+    print(sig_test)
+    print(arrmean,arrstd,right,best_class_probabilities[0])
+
+    if best_class_probabilities[0] > 0.375 and best_class_probabilities[0]> right:
+        pre=float(best_class_probabilities[0])*100
+        pre= round(pre,2)
+        pre=str(pre)+'%'
+        a=class_names[best_class_indices[0]].split(' ')
+        result=a[0]
+        predict_result = str(result+' '+pre)
+        name = str(result)
+        # self.write_json({"prediction":str(result+' '+pre)})
+    else:
+        predict_result = str("UNKNOWN")
+        name = predict_result
+        # self.write_json({"prediction":str("UNKNOWN")})
+    return predict_result, name
 
 class PrintHandlers(BaseHandler):
     def get(self):
@@ -67,13 +93,13 @@ class UploadLabeledDatapointHandler(BaseHandler):
                 self.write_json({"id":str(dbid),
                 "feature":vals,
                 "label":label,
-                "status":"No face detected...please show one face at a time"})
+                "status":"No face detected.Show one face at a time"})
                 return
             if face == 0:
                 self.write_json({"id":str(dbid),
                 "feature":vals,
                 "label":label,
-                "status":"multiple faces detected...please show one face at a time"})
+                "status":"multiple faces detected.Slease show one face at a time"})
                 return
         print('\n\n\n\n',face.shape)
 
@@ -115,25 +141,10 @@ class RequestNewDatasetId(BaseHandler):
         self.write_json({"dsid":newSessionId})
 
 class UpdateModelForDatasetId(BaseHandler):
+
     @gen.coroutine
-    def get(self):
-        '''Train a new model (or update) for given dataset ID
-        '''
+    def model_training(self):
         dsid = self.get_int_arg("dsid",default=0)
-
-        # # create feature vectors from database
-        # f=[];
-        # for a in self.db.labeledinstances.find({"dsid":dsid}): 
-        #     f.append([float(val) for val in a['feature']])
-
-        # # create label vector from database
-        # l=[];
-        # for a in self.db.labeledinstances.find({"dsid":dsid}): 
-        #     l.append(a['label'])
-
-        # # fit the model to the data
-        # c1 = KNeighborsClassifier(n_neighbors=1);
-
         data_folder = './mtcnnFacesData'
         face_net_model = '/Users/xqu/datasets/pretrain/20180402-114759.pb'
         output_model = './model/mySVMmodel.pkl'
@@ -187,9 +198,21 @@ class UpdateModelForDatasetId(BaseHandler):
                 {  "$set": {"model":Binary(bytes)}  },
                 upsert=True)
 
+        raise gen.Return("Async training Finished")
+
+
+    # @web.asynchronous
+    @gen.coroutine
+    def get(self):
+        '''Train a new model (or update) for given dataset ID
+        '''
+        
+        status = yield self.model_training()
             # send back the resubstitution accuracy
             # if training takes a while, we are blocking tornado!! No!!
-            self.write_json({"log":"Finished model training"})
+        self.write_json({"log":status})
+
+
 
 class PredictOneFromDatasetId(BaseHandler):
     def post(self):
@@ -214,21 +237,25 @@ class PredictOneFromDatasetId(BaseHandler):
 
         vals = data['feature']
         image = stringToRGB(vals)
-
+        cv2.imwrite('test.png', image) 
         print('\n\n\n\n',image.shape)
 
-        sess  = data['dsid']
+        # sess  = data['dsid']
 
         face = self.faceEmbedding(image)
         if type(face) == int:
             if face == -1:
-                self.write_json({"prediction":str("No face detected...please show one face at a time"),
-                                "RFprediction":str("No face detected...please show one face at a time")
+                self.write_json({"prediction":str("No face detected.Show one face at a time"),
+                                "RFprediction":str("No face detected.Show one face at a time"),
+                                "name":"UNKNOWN",
+                                "RF_est_number":str(self.RF_est_number)
                                     })
                 return
             if face == 0:
                 self.write_json({"prediction":str("multiple faces detected...please show one face at a time"),
-                        "RFprediction":str("multiple faces detected...please show one face at a time")})
+                        "RFprediction":str("multiple faces detected.Show one face at a time"),
+                        "name":"UNKNOWN",
+                        "RF_est_number":str(self.RF_est_number)})
                 return
 
         print('\n\n\n',face.shape)
@@ -242,35 +269,7 @@ class PredictOneFromDatasetId(BaseHandler):
                 (RFmodel, class_names) = pickle.load(infile)
                 self.clf["RF"] = RFmodel
 
-
-        def get_prediction(clf_name):
-            predictions = self.clf[clf_name].predict_proba(face)
-            best_class_indices = np.argmax(predictions, axis=1)
-            best_class_probabilities = predictions[np.arange(len(best_class_indices)), best_class_indices]
-            
-            sig_test = list(predictions[0])
-            del sig_test[best_class_indices[0]]
-
-            arrstd = np.std(sig_test)
-            arrmean = np.mean(sig_test)
-            right = arrmean+3.5*arrstd
-            print(sig_test)
-            print(arrmean,arrstd,right,best_class_probabilities[0])
-
-            if best_class_probabilities[0] > 0.375 and best_class_probabilities[0]> right:
-                pre=float(best_class_probabilities[0])*100
-                pre= round(pre,2)
-                pre=str(pre)+'%'
-                a=self.class_names[best_class_indices[0]].split(' ')
-                result=a[0]
-                predict_result = str(result+' '+pre)
-                # self.write_json({"prediction":str(result+' '+pre)})
-            else:
-                predict_result = str("UNKNOWN")
-                # self.write_json({"prediction":str("UNKNOWN")})
-            return predict_result
-
-        svm_re =get_prediction("SVM")
+        svm_re,name =get_prediction(self.clf["SVM"],self.class_names,face)
 
         predictions = self.clf["RF"].predict_proba(face)
         best_class_indices = np.argmax(predictions, axis=1)
@@ -279,11 +278,9 @@ class PredictOneFromDatasetId(BaseHandler):
         a=self.class_names[best_class_indices[0]].split(' ')
         result=a[0]
         RFpredict_result = str(result)
-
-
-        rf_re =get_prediction("RF")
-
-        self.write_json({"prediction":svm_re,
+        print(name)
+        self.write_json({"name":name,
+                        "prediction":svm_re,
                         "RFprediction":RFpredict_result,
                         "RF_est_number":str(self.RF_est_number)
                         })
