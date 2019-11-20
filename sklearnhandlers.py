@@ -23,6 +23,22 @@ import cv2
 
 from tornado import gen
 
+def formatDictResult(checkList):
+    result = ""
+    for k,v in checkList.items():
+        if k =="UNKNOWN":
+            continue
+            
+        if v == False:
+            s = "{:18s} {:6s}\n".format(k, '❌')
+            result = result+s
+        else:
+            s = "{:18s} {:6s}\n".format(k, '✅')
+            result = s+result 
+
+    return result
+
+
 # Take in base64 string and return cv image
 def stringToRGB(base64_string):
     img = base64.b64decode(str(base64_string)); 
@@ -46,7 +62,7 @@ def get_prediction(clf,class_names,face):
     print(sig_test)
     print(arrmean,arrstd,right,best_class_probabilities[0])
 
-    if best_class_probabilities[0] > 0.375 and best_class_probabilities[0]> right:
+    if best_class_probabilities[0] > 0.4 and best_class_probabilities[0]> right:
         pre=float(best_class_probabilities[0])*100
         pre= round(pre,2)
         pre=str(pre)+'%'
@@ -241,8 +257,10 @@ class PredictOneFromDatasetId(BaseHandler):
         print('\n\n\n\n',image.shape)
 
         # sess  = data['dsid']
-
-        face = self.faceEmbedding(image)
+        try:
+            face = self.faceEmbedding(image)
+        except:
+            face = -1
         if type(face) == int:
             if face == -1:
                 self.write_json({"prediction":str("No face detected.Show one face at a time"),
@@ -284,3 +302,31 @@ class PredictOneFromDatasetId(BaseHandler):
                         "RFprediction":RFpredict_result,
                         "RF_est_number":str(self.RF_est_number)
                         })
+
+        self.checkList[name] = True
+
+class ReturnCheckList(BaseHandler):
+    def post(self):
+        data = json.loads(self.request.body.decode("utf-8"))
+        vals = data['status']
+        print(vals)
+        print(self.checkList)
+
+        self.write_json({"status":"OK",
+                        "checkList":self.checkList,
+                        "resultString": formatDictResult(self.checkList),
+
+                })
+
+
+class ResetCheckList(BaseHandler):
+    def post(self):
+        for n in self.checkList:
+            self.checkList[n] = False
+
+        self.write_json({"status":"OK",
+                        "checkList":self.checkList,
+                        "resultString": formatDictResult(self.checkList),
+
+                })
+

@@ -55,7 +55,15 @@ MAXface=20
 image_dataset_dir = './imageData'
 #----------------------------------------------------------------------
 
+def init_checkList():
+    names = os.listdir('./imageData')
+    if '.DS_Store' in names:
+        names.remove('.DS_Store')
 
+    checkList = {}
+    for n in names:
+        checkList[n] = False
+    return checkList
 
 
 # Setup information for tornado class
@@ -74,7 +82,9 @@ class Application(tornado.web.Application):
                     (r"/AddDataPoint[/]?",    skh.UploadLabeledDatapointHandler),
                     (r"/GetNewDatasetId[/]?", skh.RequestNewDatasetId),
                     (r"/UpdateModel[/]?",     skh.UpdateModelForDatasetId),     
-                    (r"/PredictOne[/]?",      skh.PredictOneFromDatasetId),               
+                    (r"/PredictOne[/]?",      skh.PredictOneFromDatasetId),
+                    (r"/CheckList[/]?",       skh.ReturnCheckList),
+                    (r"/ResetCheckList[/]?",  skh.ResetCheckList),
                     ]
 
         self.handlers_string = str(handlers)
@@ -102,6 +112,7 @@ class Application(tornado.web.Application):
         self.class_names=[]
         self.RF_path=RF_path
         self.RF_est_number=50
+        self.checkList=init_checkList()
 
         settings = {'debug':True}
         tornado.web.Application.__init__(self, handlers, **settings)

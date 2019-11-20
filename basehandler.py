@@ -123,10 +123,20 @@ class BaseHandler(tornado.web.RequestHandler):
         '''
         return self.application.RF_est_number  
 
+    @property
+    def checkList(self):
+        '''Instance getter for current classifier
+        '''
+        return self.application.checkList  
+
+    @checkList.setter
+    def RF_est_number(self, value):
+        self.application.checkList = value
+
     @RF_est_number.setter
     def RF_est_number(self, value):
         self.application.RF_est_number = value
-            
+
     @clf.setter
     def clf(self, value):
         self.application.clf = value
