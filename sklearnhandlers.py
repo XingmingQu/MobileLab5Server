@@ -304,7 +304,9 @@ class PredictOneFromDatasetId(BaseHandler):
                         })
         # update place! Need to check Blink!!
         # if Blink == True then do update
-        self.checkList[name] = True 
+        if self.isBlink:
+            self.checkList[name] = True
+            self.isBlink = False 
 
 class ReturnCheckList(BaseHandler):
     def post(self):
@@ -334,11 +336,7 @@ class ResetCheckList(BaseHandler):
 
 class BlinkCheck(BaseHandler):
     def post(self):
-        for n in self.checkList:
-            self.checkList[n] = False
+        self.isBlink = True
+        print("in BlinkCheck ",self.isBlink)
 
-        self.write_json({"status":"OK",
-                        "checkList":self.checkList,
-                        "resultString": formatDictResult(self.checkList),
 
-                })

@@ -136,11 +136,11 @@ class BaseHandler(tornado.web.RequestHandler):
         return self.application.isBlink  
         
     @isBlink.setter
-    def RF_est_number(self, value):
+    def isBlink(self, value):
         self.application.isBlink = value
 
     @checkList.setter
-    def RF_est_number(self, value):
+    def checkList(self, value):
         self.application.checkList = value
 
     @RF_est_number.setter
