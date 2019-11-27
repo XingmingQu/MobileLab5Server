@@ -28,7 +28,7 @@ def formatDictResult(checkList):
     for k,v in checkList.items():
         if k =="UNKNOWN":
             continue
-            
+
         if v == False:
             s = "{:18s} {:6s}\n".format(k, '❌')
             result = result+s
@@ -62,7 +62,7 @@ def get_prediction(clf,class_names,face):
     print(sig_test)
     print(arrmean,arrstd,right,best_class_probabilities[0])
 
-    if best_class_probabilities[0] > 0.4 and best_class_probabilities[0]> right:
+    if best_class_probabilities[0] > 0.45 and best_class_probabilities[0]> right:
         pre=float(best_class_probabilities[0])*100
         pre= round(pre,2)
         pre=str(pre)+'%'
@@ -302,8 +302,9 @@ class PredictOneFromDatasetId(BaseHandler):
                         "RFprediction":RFpredict_result,
                         "RF_est_number":str(self.RF_est_number)
                         })
-
-        self.checkList[name] = True
+        # update place! Need to check Blink!!
+        # if Blink == True then do update
+        self.checkList[name] = True 
 
 class ReturnCheckList(BaseHandler):
     def post(self):
@@ -330,3 +331,14 @@ class ResetCheckList(BaseHandler):
 
                 })
 
+
+class BlinkCheck(BaseHandler):
+    def post(self):
+        for n in self.checkList:
+            self.checkList[n] = False
+
+        self.write_json({"status":"OK",
+                        "checkList":self.checkList,
+                        "resultString": formatDictResult(self.checkList),
+
+                })

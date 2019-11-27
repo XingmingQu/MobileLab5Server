@@ -129,6 +129,16 @@ class BaseHandler(tornado.web.RequestHandler):
         '''
         return self.application.checkList  
 
+    @property
+    def isBlink(self):
+        '''Instance getter for current classifier
+        '''
+        return self.application.isBlink  
+        
+    @isBlink.setter
+    def RF_est_number(self, value):
+        self.application.isBlink = value
+
     @checkList.setter
     def RF_est_number(self, value):
         self.application.checkList = value

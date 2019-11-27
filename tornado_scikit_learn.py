@@ -85,6 +85,8 @@ class Application(tornado.web.Application):
                     (r"/PredictOne[/]?",      skh.PredictOneFromDatasetId),
                     (r"/CheckList[/]?",       skh.ReturnCheckList),
                     (r"/ResetCheckList[/]?",  skh.ResetCheckList),
+                    (r"/BlinkCheck[/]?",      skh.BlinkCheck),
+
                     ]
 
         self.handlers_string = str(handlers)
@@ -113,6 +115,7 @@ class Application(tornado.web.Application):
         self.RF_path=RF_path
         self.RF_est_number=50
         self.checkList=init_checkList()
+        self.isBlink=False
 
         settings = {'debug':True}
         tornado.web.Application.__init__(self, handlers, **settings)
